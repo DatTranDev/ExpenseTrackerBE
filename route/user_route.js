@@ -10,9 +10,10 @@ route.patch('/update/:id', userController.updateUser);
 route.get("/find/email", userController.getUserByEmail);
 route.get("/findbyid/:id", userController.getUserById);
 route.post("/logout", userController.logOut);
-route.post("/getcategory/:id", userController.getCategoryByUser);
-route.post("/getwallet/:id", userController.getWalletByUser);
-route.post("/gettransaction/:id", userController.getTransactionByUser);
-route.post("/getbudget/:id", userController.getBudgetByUser);
+route.get("/getcategory/:id", userController.getCategoryByUser);
+route.get("/getwallet/:id", userController.getWalletByUser);
+route.get("/getsharingwallet/:id", userController.getSharingWalletByUser);
+route.get("/gettransaction/:id", userController.getTransactionByUser);
+route.get("/getbudget/:id", userController.getBudgetByUser);
 
 module.exports = route;

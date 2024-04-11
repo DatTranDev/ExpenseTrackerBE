@@ -4,7 +4,7 @@ const helper = require('../pkg/helper/helper.js');
 
 const response = async (req, res) => {
     const requestId = req.body.requestId;
-    const accept = req.body.accept;
+    const accept = req.body.isAccepted;
     const isValidId = await helper.isValidObjectID(requestId);
     if(!isValidId) return res.status(400).json({
         message: "Invalid request id"
@@ -15,8 +15,9 @@ const response = async (req, res) => {
     })
     if(accept){
         const userWallet = new UserWallet({
-            userId: existRequest.userId,
-            walletId: existRequest.walletId
+            userId: existRequest.receiverId,
+            walletId: existRequest.walletId,
+            isCreator: false
         })
         await userWallet.save()
     }

@@ -46,12 +46,12 @@ const addTransaction = async (req, res) => {
         userId: userId,
         walletId: walletId,
         categoryId: categoryId,
-        image: req.body.image,
         spend: req.body.spend,
         currency: req.body.currency,
         note: req.body.note,
         partner: req.body.partner,
-        createdAt: date
+        createdAt: date,
+        image: req.body.image,
     })
     await newTransaction.save().then(async ()=>{
         if(['Khoản thu', 'Đi vay', 'Thu nợ'].includes(existCategory.type)){

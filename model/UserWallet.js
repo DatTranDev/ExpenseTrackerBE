@@ -8,7 +8,11 @@ const userWalletSchema = new mongoose.Schema({
   userId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User' 
-}
+},
+  isCreator: { 
+    type: Boolean, 
+    default: false
+  }
 });
 
 module.exports = mongoose.model('UserWallet', userWalletSchema);

@@ -4,7 +4,7 @@
   "description": "SE114 - UIT ",
   "main": "app.js",
   "scripts": {
-    "start": "nodemon app.js"
+    "start": "node app.js"
   },
   "author": "Me",
   "license": "ISC",

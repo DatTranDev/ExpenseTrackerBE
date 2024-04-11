@@ -1,6 +1,7 @@
 const Category = require('../model/Category.js');
 const UserCategory = require('../model/UserCategory.js');
 const Icon = require('../model/Icon.js');
+const Transaction = require('../model/Transaction.js');
 
 const User = require('../model/User.js');
 const helper = require('../pkg/helper/helper.js');
@@ -74,7 +75,7 @@ const addNewCategory = async (req, res) => {
 };
 
 const deleteCategory = async (req, res) => {
-    const categoryId = req.body.id;
+    const categoryId = req.body.categoryId;
     const userId = req.body.userId;
     const isValidId = await helper.isValidObjectID(categoryId);
     if(!isValidId) return res.status(400).json({
@@ -93,34 +94,27 @@ const deleteCategory = async (req, res) => {
     if(!existUser) return res.status(404).json({
         message: "User is not found"
     })
-
-    try {
-        // Delete all UserCategory and Transaction documents that have the categoryId
-        await UserCategory.deleteMany({ categoryid: categoryId, userId: userId }).catch((err)=>{
+    // Delete all UserCategory and Transaction documents that have the categoryId
+    await UserCategory.deleteMany({ categoryid: categoryId, userId: userId }).catch((err)=>{
+        return res.status(400).json({
+            message: "Something went wrong when deleting UserCategory: " + err.message
+        })
+    });
+    await Transaction.deleteMany({ categoryid: categoryId, userId: userId }).catch((err)=>{
+        return res.status(400).json({
+            message: "Something went wrong when deleting Transaction: " + err.message
+        })  
+    });
+    if (!existCategory.isPublic) {
+        await Category.findByIdAndDelete(categoryId).catch((err)=>{
             return res.status(400).json({
-                message: "Something went wrong when deleting UserCategory: " + err.message
+                message: "Something went wrong when deleting Category: " + err.message
             })
         });
-        await Transaction.deleteMany({ categoryid: categoryId, userId: userId }).catch((err)=>{
-            return res.status(400).json({
-                message: "Something went wrong when deleting Transaction: " + err.message
-            })  
-        });
-        if (!existCategory.isSharing) {
-            await Category.findByIdAndDelete(categoryId).catch((err)=>{
-                return res.status(400).json({
-                    message: "Something went wrong when deleting Category: " + err.message
-                })
-            });
-        }
-        return res.json({
-            message: "Deleted successfully"
-        });
-    } catch (error) {
-        return res.status(500).json({
-            message: error.message
-        });
     }
+    return res.json({
+        message: "Deleted successfully"
+    });
 }
 
 module.exports = { addNewCategory, deleteCategory };

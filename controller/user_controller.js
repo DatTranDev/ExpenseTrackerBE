@@ -2,6 +2,7 @@ const User = require('../model/User.js');
 const Category = require('../model/Category.js');
 const UserCategory = require('../model/UserCategory.js');
 const Wallet = require('../model/Wallet.js');
+const UserWallet = require('../model/UserWallet.js');
 const Transaction = require('../model/Transaction.js');
 const Budget = require('../model/Budget.js');
 const helper = require('../pkg/helper/helper.js');
@@ -21,22 +22,24 @@ const  register = async (req, res) => {
     const newUser = new User(req.body);
     newUser.password = await bcrypt.hashPassword(newUser.password);
 
-    await newUser.save().catch((err)=>{
+    let userId = null;
+    await newUser.save().then((data)=>{
+        userId = data._id;
+    })
+    .catch((err)=>{
         return res.status(400).json({
             message: "Something went wrong"
         })
     })
 
-    const userId = newUser._id;
 
-    const categories = await Category.find({isSharing: true});
-
+    const categories = await Category.find({isPublic: true});
      // For each shared category, create a new UserCategory
      for (let category of categories) {
-        const userCategory = new UserCategory({
-            userid: userId,
-            categoryid: category._id
-        });
+        const categoryId = category._id;
+        const userCategory = new UserCategory(
+            {userId: userId, categoryId: categoryId}
+        );
 
         // Save the new UserCategory to the database
         await userCategory.save().catch((err)=>{
@@ -184,7 +187,7 @@ const getCategoryByUser = async (req, res) => {
     })
     const userCategory = await UserCategory.find({
         userId: userId
-    }).populate('categoryId').exec().select('-userId')
+    }).populate('categoryId').exec()
     return res.json({
         data: userCategory
     })
@@ -199,13 +202,36 @@ const getWalletByUser = async (req, res) => {
     if(!existUser) return res.status(404).json({
         message: "User is not found"
     })
-    const wallet = await Wallet.find({
+    const wallet = await UserWallet.find({
         userId: userId
-    }).select('-userId').exec()
+    }).populate('walletId').exec()
     return res.json({
-        data: wallet
+        data:  wallet.filter((item) => {
+            return item.walletId.isSharing == false
+        })
     })
 }
+
+const getSharingWalletByUser = async (req, res) => {
+    const userId = req.params.id;
+    const isValidId = await helper.isValidObjectID(userId);
+    if(!isValidId) return res.status(400).json({
+        message: "Invalid user id"
+    })
+    const existUser = await User.findById(userId).select('-password')
+    if(!existUser) return res.status(404).json({
+        message: "User is not found"
+    })
+    const wallet = await UserWallet.find({
+        userId: userId
+    }).populate("walletId").exec()
+    return res.json({
+        data:  wallet.filter((item) => {
+            return item.walletId.isSharing == true
+        })
+    })
+}
+
 const getTransactionByUser = async (req, res) => {
     const userId = req.params.id;
     const isValidId = await helper.isValidObjectID(userId);
@@ -218,7 +244,7 @@ const getTransactionByUser = async (req, res) => {
     })
     const transaction = await Transaction.find({
         userId: userId
-    }).select('-userId').exec()
+    }).exec()
     return res.json({
         data: transaction
     })
@@ -235,11 +261,11 @@ const getBudgetByUser = async (req, res) => {
     })
     const budget = await Budget.find({
         userId: userId
-    }).select('-userId').exec()
+    }).exec()
     return res.json({
         data: budget
     })
 }
 
-module.exports = {register, login, changePassword, deleteUser, getTransactionByUser,
+module.exports = {register, login, changePassword, deleteUser, getTransactionByUser, getSharingWalletByUser,
     updateUser, getUserByEmail, getUserById, logOut, getCategoryByUser, getWalletByUser, getBudgetByUser}

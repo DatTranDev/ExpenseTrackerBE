@@ -46,7 +46,7 @@ const updateBudget = async (req, res) => {
     if(!existBudget) return res.status(404).json({
         message: "Budget is not found"
     })
-    await Budget.findByIdAndUpdate(id, req.body).catch((err)=>{
+    await Budget.findByIdAndUpdate(budgetId, req.body).catch((err)=>{
         return res.status(400).json({
             message: err.message
         })

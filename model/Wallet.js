@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { CurrencyCodes } = require('validator/lib/isISO4217');
 const Schema = mongoose.Schema;
 const walletSchema = new Schema({
   name: { 
@@ -8,6 +9,11 @@ const walletSchema = new Schema({
   amount: { 
     type: Number, 
     default: 0 
+    },
+  currency: { 
+    type: String, 
+    enum: ["VND", "USD"],
+    default: "VND" 
     },
   isSharing: { 
     type: Boolean, 

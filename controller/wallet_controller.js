@@ -5,25 +5,23 @@ const Request = require('../model/Request.js');
 const helper = require('../pkg/helper/helper.js');
 
 const addNewWallet = async (req, res) => {
-    let listUserEmail; let check = false;
     let listUserId = [];
-    if (req.isSharing){
-        check = true;
+    if (req.body.isSharing==true){
         //Find and get user id from email
-        listUserEmail = req.body.inviteUserMail;
-        listUserEmail.forEach( async (userMail) => {
-            const isValidEmail = await helper.isValidEmail(userMail);
+        const listUserEmail = req.body.inviteUserMail;
+        for (let i = 0; i < listUserEmail.length; i++) {
+            const email = listUserEmail[i];
+            const isValidEmail = await helper.isValidEmail(email);
             if(!isValidEmail) return res.status(400).json({
                 message: "Invalid email"
             });
-            const existUser = await User.findOne({email: userMail}).select('-password');
-            if(!existUser) return res.status(404).json({
-                message: "User is not found"
-            })
-            else{
-                listUserId.push(existUser._id);
-            }
-        });
+            const exist = await User.findOne({email: email});
+            if(!exist) return res.status(404).json({
+                message: "Email is not found as a user"
+            });
+            listUserId.push(exist._id);
+        }
+       
     }
     const userId = req.body.userId;
     const isValidUserId = await helper.isValidObjectID(userId);
@@ -38,6 +36,7 @@ const addNewWallet = async (req, res) => {
     const wallet = new Wallet({
         name: req.body.name,
         amount: req.body.amount,
+        currency: req.body.currency,
         isSharing: req.body.isSharing
     });
     const newWallet = new Wallet(wallet);
@@ -45,11 +44,12 @@ const addNewWallet = async (req, res) => {
         const walletData = data;
         const userWallet = new UserWallet({
             userId: userId,
-            walletId: data._id
+            walletId: data._id,
+            isCreator: true
         });
         const newUserWallet = new UserWallet(userWallet);
         newUserWallet.save().then(()=>{
-            if(check){
+            if(req.body.isSharing==true){
                 //Send request to other users
                 listUserId.forEach( async (receiverId) => {
                     const request = new Request({
@@ -67,7 +67,7 @@ const addNewWallet = async (req, res) => {
                 });
             }
             return res.status(200).json({
-                message: !check? "Wallet is created successfully": "Wallet is created successfully and send request successfully",
+                message: req.body.isSharing ? "Wallet is created successfully and send request successfully": "Wallet is created successfully" ,
                 data: walletData
             })
         }).catch(err=>{
@@ -81,9 +81,31 @@ const addNewWallet = async (req, res) => {
         })
     })
 }
+const updateWallet = async (req, res) => {
+    const walletId = req.params.id;
+    const isValidWalletId = await helper.isValidObjectID(walletId);
+    if(!isValidWalletId) return res.status(400).json({
+        message: "Invalid wallet id"
+    })
+    const existWallet = await Wallet.findById(walletId); 
+    if(!existWallet) return res.status(404).json({
+        message: "Wallet is not found"
+    })
+
+    await Wallet.findByIdAndUpdate(walletId, req.body).catch((err)=>{
+        return res.status(400).json({
+            message: err.message
+        })
+    });
+    return res.json({
+        message: "Updated successfully"
+    });
+}
+
 const deleteWallet = async (req, res) => {
     const walletId = req.body.walletId;
     const userId = req.body.userId;
+
     const isValidId = await helper.isValidObjectID(walletId);
     if(!isValidId) return res.status(400).json({
         message: "Invalid wallet id"
@@ -102,33 +124,154 @@ const deleteWallet = async (req, res) => {
     if(!existUser) return res.status(404).json({
         message: "User is not found"
     })
+    const existUW = await UserWallet.find({ walletId: walletId, userId: userId });
+    if(existUW.length == 0) return res.status(404).json({
+        message: "User is not in this wallet"
+    })
 
-    try {
-        // Delete all UserWallet and Request documents that have the walletId
-        await UserWallet.deleteMany({ walletId: walletId, userId: userId }).catch((err)=>{
+    // Delete all UserWallet and Request documents that have the walletId
+    await UserWallet.deleteMany({ walletId: walletId, userId: userId }).catch((err)=>{
+        return res.status(400).json({
+            message: "Something went wrong when deleting UserWallet: " + err.message
+        })
+    });
+    await Request.deleteMany({ walletId: walletId }).catch((err)=>{
+        return res.status(400).json({
+            message: "Something went wrong when deleting Request: " + err.message
+        })
+    });
+
+    if(!check || (check && existUW.isCreator == true))
+    await Wallet.findByIdAndDelete(walletId).catch((err)=>{
+        return res.status(400).json({
+            message: "Something went wrong when deleting Wallet: " + err.message
+        })
+    });
+    if(check && existUW.isCreator == true){
+        await UserWallet.findOneAndUpdate({ walletId: walletId }, { isCreator: true }).catch((err)=>{
             return res.status(400).json({
-                message: "Something went wrong when deleting UserWallet: " + err.message
+                message: "Something went wrong when updating UserWallet: " + err.message
             })
-        });
-        await Request.deleteMany({ walletId: walletId }).catch((err)=>{
-            return res.status(400).json({
-                message: "Something went wrong when deleting Request: " + err.message
-            })
-        });
-        if(!check)
-        await Wallet.findByIdAndDelete(walletId).catch((err)=>{
-            return res.status(400).json({
-                message: "Something went wrong when deleting Wallet: " + err.message
-            })
-        });
-        return res.json({
-            message: "Deleted successfully"
-        });
-    } catch (error) {
-        return res.status(500).json({
-            message: error.message
         });
     }
+    return res.json({
+        message: "Deleted successfully"
+    });
 }
 
-module.exports = {addNewWallet, deleteWallet};
+const addMember = async(req, res)   => {
+    const walletId = req.body.walletId;
+    const userId = req.body.userId;
+    const isValidId = await helper.isValidObjectID(walletId);
+    if(!isValidId) return res.status(400).json({
+        message: "Invalid wallet id"
+    })
+    const existWallet = await Wallet.findById(walletId);
+    if(!existWallet) return res.status(404).json({
+        message: "Wallet is not found"
+    })
+    if(!existWallet.isSharing) return res.status(400).json({
+        message: "This wallet is not sharing"
+    })
+
+    const isValidUserId = await helper.isValidObjectID(userId);
+    if(!isValidUserId) return res.status(400).json({
+        message: "Invalid user id"
+    })
+    const existUser = await User.findById(userId).select('-password')
+    if(!existUser) return res.status(404).json({
+        message: "User is not founded"
+    })
+    const existUW = await UserWallet.findOne({ walletId: walletId, userId: userId });
+    if(!existUW) return res.status(400).json({
+        message: "You not in this wallet"
+    })
+    if(!existUW.isCreator) return res.status(400).json({
+        message: "You are not creator"
+    })
+
+    const email = req.body.inviteUserMail;
+    const isValidEmail = await helper.isValidEmail(email);
+    if(!isValidEmail) return res.status(400).json({
+        message: "Invalid email"
+    })
+    const exist = await User.findOne({email: email});
+    if(!exist) return res.status(404).json({
+        message: "Email is not found as a user"
+    })
+    const request = new Request({
+        senderId: userId,
+        receiverId: exist._id,
+        walletId: walletId,
+        name: existWallet.name
+    });
+    const newRequest = new Request(request);
+    await newRequest.save().catch(err=>{
+        return res.status(500).json({
+            message: err.message
+        })
+    });
+    return res.json({
+        message: "Request successfully"
+    })
+}
+const removeMember = async(req, res)   => {
+    const walletId = req.body.walletId;
+    const userId = req.body.userId;
+    const removeUserId = req.body.removeUserId;
+    const isValidId = await helper.isValidObjectID(walletId);
+    if(!isValidId) return res.status(400).json({
+        message: "Invalid wallet id"
+    })
+    const existWallet = await Wallet.findById(walletId);
+    if(!existWallet) return res.status(404).json({
+        message: "Wallet is not found"
+    })
+
+    const isValidUserId = await helper.isValidObjectID(userId);
+    if(!isValidUserId) return res.status(400).json({
+        message: "Invalid user id"
+    })
+    const existUser = await User.findById(userId)
+    if(!existUser) return res.status(404).json({
+        message: "User is not found"
+    })
+
+    const isValidRMUserId = await helper.isValidObjectID(removeUserId);
+    if(!isValidRMUserId) return res.status(400).json({
+        message: "Invalid remove user id"
+    })
+    const existRMUser = await User.findById(removeUserId)
+    if(!existRMUser) return res.status(404).json({
+        message: "Remove user is not found"
+    })
+    const existUW = await UserWallet.findOne({ walletId: walletId, userId: userId })
+    if(!existUW) return res.status(404).json({
+        message: "User is not in this wallet"
+    })
+    if(!existUW.isCreator) return res.status(400).json({
+        message: "You is not creator of this wallet"
+    })
+    await UserWallet.deleteOne({ walletId: walletId, userId: removeUserId }).catch((err)=>{
+        return res.status(400).json({
+            message: "Something went wrong when deleting UserWallet: " + err.message
+        })
+    });
+    const request = new Request({
+        senderId: userId,
+        receiverId: removeUserId,
+        walletId: null,
+        name: `${existUser.userName} remove you from wallet ${existWallet.name}`
+    });
+    const newRequest = new Request(request);
+    await newRequest.save().catch(err=>{
+        return res.status(400).json({
+            message: err.message
+        })
+    });
+    return res.json({
+        message: "Remove successfully"
+    });
+}
+
+module.exports = {addNewWallet, updateWallet, deleteWallet, addMember, removeMember};

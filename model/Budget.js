@@ -13,6 +13,11 @@ const budgetSchema = new mongoose.Schema({
     type: Number, 
     required: true 
 },
+currency: {
+  type: String,
+  enum: ['VND', 'USD'],
+  default: 'VND'
+},
   period: { 
     type: String, 
     enum: ["Tuần", "Tháng", "Năm"] ,
