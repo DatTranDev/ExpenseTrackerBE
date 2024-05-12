@@ -1,5 +1,6 @@
 const UserWallet = require('../model/UserWallet.js');
 const Request = require('../model/Request.js');
+const Wallet = require('../model/Wallet.js');
 const helper = require('../pkg/helper/helper.js');
 const User = require('../model/User.js');
 const { get } = require('mongoose');
@@ -43,8 +44,16 @@ const getByUser = async (req, res) => {
     const requests = await Request.find({
         receiverId: userId
     })
+    const requestsWithDetails = await Promise.all(requests.map(async (item) => {
+        let requestObj = item.toObject();
+        requestObj.sender = await User.findById(item.senderId).select('-password');
+        requestObj.receiver = await User.findById(item.receiverId).select('-password');
+        requestObj.wallet = await Wallet.findById(item.walletId);
+        return requestObj;
+    }));
+
     return res.json({
-        data: requests
+        data: requestsWithDetails
     })
 }
 

@@ -2,6 +2,7 @@ const User = require('../model/User.js');
 const Category = require('../model/Category.js');
 const UserCategory = require('../model/UserCategory.js');
 const Wallet = require('../model/Wallet.js');
+const Icon = require('../model/Icon.js');
 const UserWallet = require('../model/UserWallet.js');
 const Transaction = require('../model/Transaction.js');
 const Budget = require('../model/Budget.js');
@@ -187,16 +188,16 @@ const getCategoryByUser = async (req, res) => {
     })
     const userCategory = await UserCategory.find({
         userId: userId
-    }).populate({
-        path: 'categoryId',
-        populate: {
-            path: 'iconId'
-        }
-    }).exec()
+    }).populate('categoryId').exec()
 
     // Map over the userCategory array and return only the categoryId field
-    const categories = userCategory.map(doc => doc.categoryId);
-
+    const categories = await Promise.all(userCategory.map(async doc => {
+        if(doc.categoryId){
+            const category = doc.categoryId.toObject();
+            category.icon = await Icon.findById(category.iconId);
+            return category;
+        }
+    }));
     return res.json({
         data: categories
     })
@@ -211,13 +212,18 @@ const getWalletByUser = async (req, res) => {
     if(!existUser) return res.status(404).json({
         message: "User is not found"
     })
-    const wallet = await UserWallet.find({
+    const userWallets = await UserWallet.find({
         userId: userId
     }).populate('walletId').exec()
+
+    const wallets = userWallets.filter((item) => {
+        return item.walletId && item.walletId.isSharing == false
+    }).map((item) => {
+        return item.walletId
+    })
+
     return res.json({
-        data:  wallet.filter((item) => {
-            return item.walletId.isSharing == false
-        })
+        data:  wallets
     })
 }
 
@@ -231,13 +237,18 @@ const getSharingWalletByUser = async (req, res) => {
     if(!existUser) return res.status(404).json({
         message: "User is not found"
     })
-    const wallet = await UserWallet.find({
+    const userWallets = await UserWallet.find({
         userId: userId
-    }).populate("walletId").exec()
+    }).populate('walletId').exec()
+
+    const wallets = userWallets.filter((item) => {
+        return item.walletId && item.walletId.isSharing == true
+    }).map((item) => {
+        return item.walletId
+    })
+
     return res.json({
-        data:  wallet.filter((item) => {
-            return item.walletId.isSharing == true
-        })
+        data:  wallets
     })
 }
 
@@ -254,8 +265,17 @@ const getTransactionByUser = async (req, res) => {
     const transaction = await Transaction.find({
         userId: userId
     }).exec()
+    
+    const transactionsWithDetails = await Promise.all(transaction.map(async (item) => {
+        let transactionObj = item.toObject();
+        transactionObj.category = await Category.findById(item.categoryId);
+        transactionObj.wallet = await Wallet.findById(item.walletId);
+        transactionObj.user = await User.findById(item.userId).select('-password');
+        return transactionObj;
+    }));
+    
     return res.json({
-        data: transaction
+        data: transactionsWithDetails
     })
 }
 const getBudgetByUser = async (req, res) => {
@@ -271,8 +291,15 @@ const getBudgetByUser = async (req, res) => {
     const budget = await Budget.find({
         userId: userId
     }).exec()
+    const budgetsWithUser = await Promise.all(budget.map(async (item) => {
+        let budgetObj = item.toObject();
+        budgetObj.user = await User.findById(item.userId).select('-password');
+        budgetObj.category = await Category.findById(item.categoryId);
+        return budgetObj;
+    }));
+
     return res.json({
-        data: budget
+        data: budgetsWithUser
     })
 }
 
