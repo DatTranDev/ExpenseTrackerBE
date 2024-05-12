@@ -187,9 +187,18 @@ const getCategoryByUser = async (req, res) => {
     })
     const userCategory = await UserCategory.find({
         userId: userId
-    }).populate('categoryId').exec()
+    }).populate({
+        path: 'categoryId',
+        populate: {
+            path: 'iconId'
+        }
+    }).exec()
+
+    // Map over the userCategory array and return only the categoryId field
+    const categories = userCategory.map(doc => doc.categoryId);
+
     return res.json({
-        data: userCategory
+        data: categories
     })
 }
 const getWalletByUser = async (req, res) => {
