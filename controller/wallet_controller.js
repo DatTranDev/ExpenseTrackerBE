@@ -1,6 +1,8 @@
 const Wallet = require('../model/Wallet.js');
 const User = require('../model/User.js');
 const UserWallet = require('../model/UserWallet.js');
+const Category = require('../model/Category.js');
+const Transaction = require('../model/Transaction.js');
 const Request = require('../model/Request.js');
 const helper = require('../pkg/helper/helper.js');
 
@@ -267,5 +269,28 @@ const removeMember = async(req, res)   => {
         message: "Remove successfully"
     });
 }
+const getTransactions = async (req, res) => {
+    const walletId = req.params.id;
+    const isValidWalletId = await helper.isValidObjectID(walletId);
+    if(!isValidWalletId) return res.status(400).json({
+        message: "Invalid wallet id"
+    })
+    const existWallet = await Wallet.findById(walletId);
+    if(!existWallet) return res.status(404).json({
+        message: "Wallet is not found"
+    })
+    const transactions = await Transaction.find({ walletId: walletId });
 
-module.exports = {addNewWallet, updateWallet, deleteWallet, addMember, removeMember};
+    const transactionsWithDetails = await Promise.all(transactions.map(async (item) => {
+        let transactionObj = item.toObject();
+        transactionObj.user = await User.findById(item.userId).select('-password');
+        transactionObj.category = await Category.findById(item.categoryId);
+        return transactionObj;
+    }));
+
+    return res.json({
+        message: "Get transactions successfully",
+        data: transactionsWithDetails
+    });
+}
+module.exports = {addNewWallet, updateWallet, deleteWallet, addMember, removeMember, getTransactions};

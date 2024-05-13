@@ -120,7 +120,10 @@ const updateTransaction = async (req, res) => {
     })
     const oldSpend = existTransaction1.spend;
     
-    await Transaction.findByIdAndUpdate(id, req.body).then(async ()=>{
+    await Transaction.findByIdAndUpdate(id, {
+        ...req.body,
+        createdAt: new Date(req.body.createdAt)
+    }).then(async ()=>{
         const existTransaction = await Transaction.findById(id);
         const existWallet = await Wallet.findById(existTransaction.walletId);
         if(['Khoản thu', 'Đi vay', 'Thu nợ'].includes(existTransaction.type)){
@@ -136,6 +139,17 @@ const updateTransaction = async (req, res) => {
                 message: err.message
             })
         })
+        Object.keys(req.body).forEach(key => {
+            if (key === 'createdAt') {
+                const [day, month, year] = req.body[key].split("/");
+                existTransaction[key] = new Date(year, month - 1, day);
+            } else {
+                existTransaction[key] = req.body[key];
+            }
+        });
+        existTransaction.markModified('createdAt');
+
+        await existTransaction.save();
         return res.json({
             message: "Transaction updated successfully"
         })

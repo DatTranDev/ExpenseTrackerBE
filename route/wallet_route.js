@@ -7,5 +7,6 @@ route.patch('/update/:id', walletController.updateWallet);
 route.delete('/delete', walletController.deleteWallet);
 route.patch('/addmember', walletController.addMember);
 route.patch('/removemember', walletController.removeMember);
+route.get('/gettransaction/:id', walletController.getTransactions);
 
 module.exports = route;
