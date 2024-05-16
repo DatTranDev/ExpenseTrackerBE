@@ -160,5 +160,52 @@ const updateTransaction = async (req, res) => {
     })
 
 }
+const getNeedToPay = async (req, res) => {
+    const userId = req.params.id;
+    const isValidId = await helper.isValidObjectID(userId);
+    if(!isValidId) return res.status(400).json({
+        message: "Invalid user id"
+    })
+    const existUser = await User.findById(userId);
+    if(!existUser) return res.status(404).json({
+        message: "User is not found"
+    })
+    const transactions = await Transaction.find({userId: userId}).exec();
+    const transactionsWithCategory = await Promise.all(transactions.map(async (transaction) => {
+        let transactionObj = transaction.toObject();
+        transactionObj.category = await Category.findById(transaction.categoryId);
+        return transactionObj;
+    }));
 
-module.exports = {addTransaction, deleteTransaction, updateTransaction}
+    const filteredTransactions = transactionsWithCategory.filter(transaction => transaction.category.type === "Đi vay");
+
+    return res.json({
+        message: "Success",
+        data: filteredTransactions
+    })
+}
+const getNeedToReceive = async (req, res) => {
+    const userId = req.params.id;
+    const isValidId = await helper.isValidObjectID(userId);
+    if(!isValidId) return res.status(400).json({
+        message: "Invalid user id"
+    })
+    const existUser = await User.findById(userId);
+    if(!existUser) return res.status(404).json({
+        message: "User is not found"
+    })
+    const transactions = await Transaction.find({userId: userId}).exec();
+    const transactionsWithCategory = await Promise.all(transactions.map(async (transaction) => {
+        let transactionObj = transaction.toObject();
+        transactionObj.category = await Category.findById(transaction.categoryId);
+        return transactionObj;
+    }));
+
+    const filteredTransactions = transactionsWithCategory.filter(transaction => transaction.category.type === "Cho vay");
+
+    return res.json({
+        message: "Success",
+        data: filteredTransactions
+    })
+}
+module.exports = {addTransaction, deleteTransaction, updateTransaction, getNeedToPay, getNeedToReceive}
