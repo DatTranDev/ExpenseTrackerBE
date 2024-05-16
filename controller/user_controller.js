@@ -143,12 +143,13 @@ const updateUser = async (req, res) => {
     })
 }
 const getUserByEmail = async (req, res) => {
-    const isValidEmail = await helper.isValidEmail(req.body.email)
+    const isValidEmail = await helper.isValidEmail(req.params.email)
+    console.log(req.params.email);
     if(!isValidEmail) return res.status(400).json({
         message: "Invalid email"
     })
     const existUser = await User.findOne({
-        email: req.body.email
+        email: req.params.email
     }).select('-password')
     if(!existUser) return res.status(404).json({
         message: "User is not found"

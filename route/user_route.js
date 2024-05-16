@@ -7,7 +7,7 @@ route.post('/login', userController.login);
 route.patch('/changepassword', userController.changePassword);
 route.delete('/delete/:id', userController.deleteUser);
 route.patch('/update/:id', userController.updateUser);
-route.get("/find/email", userController.getUserByEmail);
+route.get("/findbyemail/:email", userController.getUserByEmail);
 route.get("/findbyid/:id", userController.getUserById);
 route.post("/logout", userController.logOut);
 route.get("/getcategory/:id", userController.getCategoryByUser);
