@@ -111,55 +111,101 @@ const deleteTransaction = async (req, res) => {
 const updateTransaction = async (req, res) => {
     const id = req.params.id;
     const isValidId = await helper.isValidObjectID(id);
-    if(!isValidId) return res.status(400).json({
-        message: "Invalid transaction id"
-    })
+    if (!isValidId) return res.status(400).json({ message: "Invalid transaction id" });
+
     const existTransaction1 = await Transaction.findById(id);
-    if(!existTransaction1) return res.status(404).json({
-        message: "Transaction is not found"
-    })
+    if (!existTransaction1) return res.status(404).json({ message: "Transaction is not found" });
+
     const oldSpend = existTransaction1.spend;
+    const oldWalletId = existTransaction1.walletId;
+    const oldCategoryId = existTransaction1.categoryId;
     
-    await Transaction.findByIdAndUpdate(id, {
-        ...req.body,
-        createdAt: new Date(req.body.createdAt)
-    }).then(async ()=>{
+    try {
+        if(req.body.createdAt!=null){
+            const dateString = req.body.createdAt;
+            const dateSplit = dateString.split("/")
+            var day = parseInt(dateSplit[0], 10);
+            var month = parseInt(dateSplit[1], 10) - 1; // Month is zero-based
+            var year = parseInt(dateSplit[2], 10);
+            const date = new Date(Date.UTC(year, month, day));
+            req.body.createdAt = date;
+        } 
+        await Transaction.findByIdAndUpdate(id, {
+            ...req.body        
+        });
+
         const existTransaction = await Transaction.findById(id);
         const existWallet = await Wallet.findById(existTransaction.walletId);
-        if(['Khoản thu', 'Đi vay', 'Thu nợ'].includes(existTransaction.type)){
-            existWallet.amount += existTransaction.spend;
-            existWallet.amount -= oldSpend;
-        }
-        else{
-            existWallet.amount -= existTransaction.spend;
-            existWallet.amount += oldSpend;
-        }
-        await existWallet.save().catch(err => {
-            return res.status(500).json({
-                message: err.message
-            })
-        })
-        Object.keys(req.body).forEach(key => {
-            if (key === 'createdAt') {
-                const [day, month, year] = req.body[key].split("/");
-                existTransaction[key] = new Date(year, month - 1, day);
+        const oldWallet = await Wallet.findById(oldWalletId);
+        const oldCategory = await Category.findById(oldCategoryId);
+        const newCategory = await Category.findById(existTransaction.categoryId);
+
+        if (oldCategory.type !== newCategory.type) {
+            // Reverse old category impact on old wallet
+            if (['Khoản thu', 'Đi vay', 'Thu nợ'].includes(oldCategory.type)) {
+                oldWallet.amount -= oldSpend;
             } else {
-                existTransaction[key] = req.body[key];
+                oldWallet.amount += oldSpend;
             }
-        });
-        existTransaction.markModified('createdAt');
+
+            // Apply new category impact on new wallet
+            if (['Khoản thu', 'Đi vay', 'Thu nợ'].includes(newCategory.type) ){
+                existWallet.amount += existTransaction.spend;
+                if(existWallet.id.toString() === oldWallet.id.toString())
+                    existWallet.amount += oldSpend;
+            } else {
+                existWallet.amount -= existTransaction.spend;
+                if(existWallet.id.toString() === oldWallet.id.toString())
+                    existWallet.amount += oldSpend;
+            }           
+            
+        } else {
+            // If the type hasn't changed, just update the wallet based on the spend difference
+            if (['Khoản thu', 'Đi vay', 'Thu nợ'].includes(newCategory.type)) {
+                if (existWallet.id.toString() === oldWallet.id.toString()) {
+                    existWallet.amount += existTransaction.spend - oldSpend;
+                } else {
+                    oldWallet.amount -= oldSpend;
+                    existWallet.amount += existTransaction.spend;
+                }
+            } else {
+                if (existWallet.id.toString() === oldWallet.id.toString()) {
+                    existWallet.amount -= existTransaction.spend - oldSpend;
+                } else {
+                    oldWallet.amount += oldSpend;
+                    existWallet.amount -= existTransaction.spend;
+                }
+            }
+        }
+
+        if (oldWalletId.toString() !== existTransaction.walletId.toString()) {
+            await oldWallet.save();
+        }
+        await existWallet.save();
+
+        // Object.keys(req.body).forEach(key => {
+        //     if (key === 'createdAt') {
+        //         const dateString = req.body.createdAt;
+        //         const dateSplit = dateString.split("/")
+        //         var day = parseInt(dateSplit[0], 10);
+        //         var month = parseInt(dateSplit[1], 10) - 1; // Month is zero-based
+        //         var year = parseInt(dateSplit[2], 10);
+        //         const date = new Date(Date.UTC(year, month, day));
+        //         existTransaction[key] = date;
+        //     } else {
+        //         existTransaction[key] = req.body[key];
+        //     }
+        // });
+        // existTransaction.markModified('createdAt');
 
         await existTransaction.save();
-        return res.json({
-            message: "Transaction updated successfully"
-        })
-    }).catch(err => {
-        return res.status(500).json({
-            message: err.message
-        })
-    })
 
-}
+        return res.json({ message: "Transaction updated successfully" });
+    } catch (err) {
+        return res.status(500).json({ message: err.message });
+    }
+};
+
 const getNeedToPay = async (req, res) => {
     const userId = req.params.id;
     const isValidId = await helper.isValidObjectID(userId);
