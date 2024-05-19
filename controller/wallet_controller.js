@@ -129,27 +129,59 @@ const deleteWallet = async (req, res) => {
     if(existUW.length == 0) return res.status(404).json({
         message: "User is not in this wallet"
     })
-    const isCreator = existUW[0].isCreator; const isSharing = existWallet.isSharing;
+    const isCreator = existUW[0].isCreator; 
+    const isSharing = existWallet.isSharing;
     await UserWallet.deleteOne({ walletId: walletId, userId: userId }).catch((err)=>{
         return res.status(400).json({
             message: "Something went wrong when deleting UserWallet: " + err.message
         })
     });
 
-    if(isSharing && isCreator){
-        await UserWallet.findOneAndUpdate({ walletId: walletId }, { isCreator: true }).catch((err)=>{
-            return res.status(400).json({
-                message: "Something went wrong when updating UserWallet: " + err.message
+    if(isSharing){
+        if(isCreator){
+            await UserWallet.findOneAndUpdate({ walletId: walletId }, { isCreator: true }).catch((err)=>{
+                return res.status(400).json({
+                    message: "Something went wrong when updating UserWallet: " + err.message
+                })
+            });
+        }
+        const transactions = await Transaction.find({ walletId: walletId, userId: userId });
+
+        // Loop through each transaction
+        for (let transaction of transactions) {
+
+            const old = transaction;
+            // Delete the transaction
+            await Transaction.findByIdAndDelete(old._id).then(async ()=>{
+                const existWallet = await Wallet.findById(walletId);
+                if(['Khoản thu', 'Đi vay', 'Thu nợ'].includes(old.type)){
+                    existWallet.amount -= old.spend;
+                }
+                else{
+                    existWallet.amount += old.spend;
+                }
+                await existWallet.save();                
+            }).catch(err => {
+                return res.status(500).json({
+                    message: err.message
+                })
             })
-        });
+        }
     }
 
-    if(!isSharing && isCreator)
-    await Wallet.findByIdAndDelete(walletId).catch((err)=>{
-        return res.status(400).json({
-            message: "Something went wrong when deleting Wallet: " + err.message
-        })
-    });
+    if(!isSharing && isCreator){
+        await Transaction.deleteMany({ walletId: walletId }).catch((err)=>{
+            return res.status(400).json({
+                message: "Something went wrong when deleting Transaction: " + err.message
+            })
+        });
+        await Wallet.findByIdAndDelete(walletId).catch((err)=>{
+            return res.status(400).json({
+                message: "Something went wrong when deleting Wallet: " + err.message
+            })
+        });
+
+    }
     
     return res.json({
         message: "Deleted successfully"
