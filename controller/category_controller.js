@@ -1,6 +1,7 @@
 const Category = require('../model/Category.js');
 const UserCategory = require('../model/UserCategory.js');
 const Icon = require('../model/Icon.js');
+const Wallet = require('../model/Wallet.js');
 const Transaction = require('../model/Transaction.js');
 
 const User = require('../model/User.js');
@@ -100,11 +101,27 @@ const deleteCategory = async (req, res) => {
             message: "Something went wrong when deleting UserCategory: " + err.message
         })
     });
-    await Transaction.deleteMany({ categoryid: categoryId, userId: userId }).catch((err)=>{
-        return res.status(400).json({
-            message: "Something went wrong when deleting Transaction: " + err.message
-        })  
-    });
+    const transactions = await Transaction.find({ categoryid: categoryId, userId: userId });
+    
+    for(let transaction of transactions){
+        await Transaction.findByIdAndDelete(transaction._id).then(async ()=>{
+            const existWallet = await Wallet.findById(transaction.walletId);
+            if(['Khoản thu', 'Đi vay', 'Thu nợ'].includes(transaction.type))
+                existWallet.amount -= transaction.amount;
+            else
+                existWallet.amount += transaction.amount;
+            await existWallet.save().catch((err)=>{
+                return res.status(400).json({
+                    message: "Something went wrong when updating Wallet: " + err.message
+                })
+            });
+        }).catch((err)=>{
+            return res.status(400).json({
+                message: "Something went wrong when deleting Transaction: " + err.message
+            })
+        });
+    }
+    // Delete the category if it is not public
     if (!existCategory.isPublic) {
         await Category.findByIdAndDelete(categoryId).catch((err)=>{
             return res.status(400).json({
@@ -112,6 +129,13 @@ const deleteCategory = async (req, res) => {
             })
         });
     }
+
+    //Delete Budgets 
+    await Budget.deleteMany({ categoryId: categoryId, userId: userId }).catch((err)=>{
+        return res.status(400).json({
+            message: "Something went wrong when deleting Budget: " + err.message
+        })
+    });
     return res.json({
         message: "Deleted successfully"
     });

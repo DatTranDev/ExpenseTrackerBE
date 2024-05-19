@@ -110,8 +110,15 @@ const deleteUser = async (req, res) => {
         return res.status(400).json({
             message: "Something went wrong"
         })
-    })
-
+    });
+    await UserCategory.deleteMany({
+        userId: id
+    }).catch((err)=>{
+        return res.status(400).json({
+            message: "Something went wrong"
+        })
+    });
+    
     await User.findByIdAndDelete(id).catch((err)=>{
         return res.status(400).json({
             message: "Something went wrong"
