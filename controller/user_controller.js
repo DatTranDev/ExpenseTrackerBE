@@ -276,7 +276,12 @@ const getTransactionByUser = async (req, res) => {
     
     const transactionsWithDetails = await Promise.all(transaction.map(async (item) => {
         let transactionObj = item.toObject();
-        transactionObj.category = await Category.findById(item.categoryId);
+        let category = await Category.findById(item.categoryId);
+        if (category && category.iconId) {
+            category = category.toObject();
+            category.icon = await Icon.findById(category.iconId);
+        }
+        transactionObj.category = category;
         transactionObj.wallet = await Wallet.findById(item.walletId);
         transactionObj.user = await User.findById(item.userId).select('-password');
         return transactionObj;
