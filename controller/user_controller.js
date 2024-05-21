@@ -283,6 +283,7 @@ const getTransactionByUser = async (req, res) => {
             category.icon = await Icon.findById(category.iconId);
         }
         transactionObj.category = category;
+        transactionObj.id = transactionObj._id;
         transactionObj.wallet = await Wallet.findById(item.walletId);
         transactionObj.user = await User.findById(item.userId).select('-password');
         return transactionObj;
@@ -307,6 +308,7 @@ const getBudgetByUser = async (req, res) => {
     }).exec()
     const budgetsWithUser = await Promise.all(budget.map(async (item) => {
         let budgetObj = item.toObject();
+        budgetObj.id = budgetObj._id;
         budgetObj.user = await User.findById(item.userId).select('-password');
         budgetObj.category = await Category.findById(item.categoryId);
         return budgetObj;

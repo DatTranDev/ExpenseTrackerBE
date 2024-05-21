@@ -12,11 +12,19 @@ const addTransaction = async (req, res) => {
 
     //Format date
     const dateString = req.body.createdAt;
-    const dateSplit = dateString.split("/")
-    var day = parseInt(dateSplit[0], 10);
-    var month = parseInt(dateSplit[1], 10) - 1; // Month is zero-based
-    var year = parseInt(dateSplit[2], 10);
-    const date = new Date(Date.UTC(year, month, day))
+    // const dateSplit = dateString.split("/")
+    // var day = parseInt(dateSplit[0], 10);
+    // var month = parseInt(dateSplit[1], 10) - 1; // Month is zero-based
+    // var year = parseInt(dateSplit[2], 10);
+    // const date = new Date(Date.UTC(year, month, day))
+    //Format date
+    const date = new Date(dateString);
+
+    if (isNaN(date.getTime())) {
+        return res.status(400).json({
+            message: "Invalid date format"
+        });
+    }
 
     const isValidId = await helper.isValidObjectID(userId);
     if(!isValidId) return res.status(400).json({
@@ -122,12 +130,15 @@ const updateTransaction = async (req, res) => {
     
     try {
         if(req.body.createdAt!=null){
+            //Format date
             const dateString = req.body.createdAt;
-            const dateSplit = dateString.split("/")
-            var day = parseInt(dateSplit[0], 10);
-            var month = parseInt(dateSplit[1], 10) - 1; // Month is zero-based
-            var year = parseInt(dateSplit[2], 10);
-            const date = new Date(Date.UTC(year, month, day));
+            const date = new Date(dateString);
+
+            if (isNaN(date.getTime())) {
+                return res.status(400).json({
+                    message: "Invalid date format"
+                });
+            }
             req.body.createdAt = date;
         } 
         await Transaction.findByIdAndUpdate(id, {
