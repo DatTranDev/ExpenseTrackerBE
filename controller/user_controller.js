@@ -202,6 +202,7 @@ const getCategoryByUser = async (req, res) => {
     const categories = await Promise.all(userCategory.map(async doc => {
         if(doc.categoryId){
             const category = doc.categoryId.toObject();
+            category.id = category._id;
             category.icon = await Icon.findById(category.iconId);
             return category;
         }
