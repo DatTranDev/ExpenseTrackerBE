@@ -310,7 +310,12 @@ const getBudgetByUser = async (req, res) => {
         let budgetObj = item.toObject();
         budgetObj.id = budgetObj._id;
         budgetObj.user = await User.findById(item.userId).select('-password');
-        budgetObj.category = await Category.findById(item.categoryId);
+        let category = await Category.findById(item.categoryId);
+        if (category && category.iconId) {
+            category = category.toObject();
+            category.icon = await Icon.findById(category.iconId);
+        }
+        budgetObj.category = category;
         return budgetObj;
     }));
 
