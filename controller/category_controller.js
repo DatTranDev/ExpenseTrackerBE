@@ -1,6 +1,7 @@
 const Category = require('../model/Category.js');
 const UserCategory = require('../model/UserCategory.js');
 const Icon = require('../model/Icon.js');
+const Budget = require('../model/Budget.js');
 const Wallet = require('../model/Wallet.js');
 const Transaction = require('../model/Transaction.js');
 
