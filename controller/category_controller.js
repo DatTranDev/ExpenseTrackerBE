@@ -4,6 +4,7 @@ const Icon = require('../model/Icon.js');
 const Budget = require('../model/Budget.js');
 const Wallet = require('../model/Wallet.js');
 const Transaction = require('../model/Transaction.js');
+const mongoose = require('mongoose');
 
 const User = require('../model/User.js');
 const helper = require('../pkg/helper/helper.js');
@@ -95,13 +96,25 @@ const deleteCategory = async (req, res) => {
     const existUser = await User.findById(userId).select('-password')
     if(!existUser) return res.status(404).json({
         message: "User is not found"
-    })
-    // Delete all UserCategory and Transaction documents that have the categoryId
-    await UserCategory.deleteMany({ categoryid: categoryId, userId: userId }).catch((err)=>{
+    })   
+
+
+    const userCategory = await UserCategory.findOne({ categoryId: categoryId, userId: userId });
+
+    if (!userCategory) {
+        return res.status(404).json({
+            message: "UserCategory not found"
+        });
+    }
+
+    try {
+        const result = await UserCategory.findByIdAndDelete(userCategory._id);
+        console.log(result);
+    } catch (err) {
         return res.status(400).json({
             message: "Something went wrong when deleting UserCategory: " + err.message
-        })
-    });
+        });
+    }
     const transactions = await Transaction.find({ categoryid: categoryId, userId: userId });
     
     for(let transaction of transactions){

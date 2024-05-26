@@ -58,6 +58,7 @@ const addNewWallet = async (req, res) => {
                         senderId: userId,
                         receiverId: receiverId,
                         walletId: data._id,
+                        createAt: Date.now(),
                         name: data.name
                     });
                     const newRequest = new Request(request);
@@ -232,6 +233,7 @@ const addMember = async(req, res)   => {
         senderId: userId,
         receiverId: exist._id,
         walletId: walletId,
+        createAt: Date.now(),
         name: existWallet.name
     });
     const newRequest = new Request(request);
@@ -290,7 +292,8 @@ const removeMember = async(req, res)   => {
         senderId: userId,
         receiverId: removeUserId,
         walletId: null,
-        name: `${existUser.userName} remove you from wallet ${existWallet.name}`
+        createAt: Date.now(),
+        name: `${existUser.userName} xóa bản khỏi quỹ ${existWallet.name}`
     });
     const newRequest = new Request(request);
     await newRequest.save().catch(err=>{
