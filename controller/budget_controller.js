@@ -26,6 +26,10 @@ const addNewBudget = async (req, res) => {
         message: "Category is not found"
     })
 
+    const budget = await Budget.findOne({userId: userId, categoryId: categoryId});
+    if(budget) return res.status(400).json({
+        message: "Budget is already exist"
+    })
     const newBuget = new Budget(req.body);
     await newBuget.save().catch((err)=>{
         return res.status(500).json({
