@@ -50,6 +50,21 @@ const updateBudget = async (req, res) => {
     if(!existBudget) return res.status(404).json({
         message: "Budget is not found"
     })
+    if(req.body.categoryId){
+        const categoryId = req.body.categoryId;
+        const isValidCategoryId = await helper.isValidObjectID(categoryId);
+        if(!isValidCategoryId) return res.status(400).json({
+            message: "Invalid category id"
+        });
+        const existCategory = await Category.findById(categoryId);
+        if(!existCategory) return res.status(404).json({
+            message: "Category is not found"
+        })
+        const budget = await Budget.findOne({userId: existBudget.userId, categoryId: categoryId});
+        if(budget) return res.status(400).json({
+            message: "Ngân sách đã tồn tại"
+        })
+    }
     await Budget.findByIdAndUpdate(budgetId, req.body).catch((err)=>{
         return res.status(400).json({
             message: err.message

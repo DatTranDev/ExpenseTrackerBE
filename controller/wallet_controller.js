@@ -34,7 +34,8 @@ const addNewWallet = async (req, res) => {
     if(!existUser) return res.status(404).json({
         message: "User is not found"
     })
-    const existingWallet = await Wallet.findOne({name: req.body.name});
+    const name = req.body.name.trim();
+    const existingWallet = await Wallet.findOne({name: new RegExp(`^${name}$`, 'i')});
     if(existingWallet){
         const existingUserWallet = await UserWallet.findOne({userId: userId, walletId: existingWallet._id});
         if(existingUserWallet) return res.status(400).json({
@@ -102,7 +103,12 @@ const updateWallet = async (req, res) => {
     if(!existWallet) return res.status(404).json({
         message: "Wallet is not found"
     })
-
+    if(req.body.name){
+        const existingWallet = await Wallet.findOne({name: new RegExp(`^${req.body.name.trim()}$`, 'i')});
+        if(existingWallet) return res.status(400).json({
+            message: "Wallet is existed"
+        });
+    }
     await Wallet.findByIdAndUpdate(walletId, req.body).catch((err)=>{
         return res.status(400).json({
             message: err.message

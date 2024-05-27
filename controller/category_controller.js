@@ -44,8 +44,8 @@ const addNewCategory = async (req, res) => {
             message: "Parent category is not found"
         })
     }
-
-    const existingCategory = await Category.findOne({name: req.body.name});
+    const name = req.body.name.trim();
+    const existingCategory = await Category.findOne({name: new RegExp(`^${name}$`, 'i')});
 
     if (existingCategory) {
         const existingUserCategory = await UserCategory.findOne({ userId: userId, categoryId: existingCategory._id });
