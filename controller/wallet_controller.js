@@ -34,6 +34,14 @@ const addNewWallet = async (req, res) => {
     if(!existUser) return res.status(404).json({
         message: "User is not found"
     })
+    const existingWallet = await Wallet.findOne({name: req.body.name});
+    if(existingWallet){
+        const existingUserWallet = await UserWallet.findOne({userId: userId, walletId: existingWallet._id});
+        if(existingUserWallet) return res.status(400).json({
+            message: "Ví đã tồn tại"
+        });
+    }
+
 
     const wallet = new Wallet({
         name: req.body.name,

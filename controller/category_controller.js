@@ -45,6 +45,15 @@ const addNewCategory = async (req, res) => {
         })
     }
 
+    const existingCategory = await Category.findOne({name: req.body.name});
+
+    if (existingCategory) {
+        const existingUserCategory = await UserCategory.findOne({ userId: userId, categoryId: existingCategory._id });
+        if (existingUserCategory) 
+            return res.status(400).json({
+                message: "Danh mục đã tồn tại"
+            });
+    }
     const category = new Category({
         name: req.body.name,
         type: req.body.type,

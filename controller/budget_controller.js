@@ -28,7 +28,7 @@ const addNewBudget = async (req, res) => {
 
     const budget = await Budget.findOne({userId: userId, categoryId: categoryId});
     if(budget) return res.status(400).json({
-        message: "Budget is already exist"
+        message: "Ngân sách đã tồn tại"
     })
     const newBuget = new Budget(req.body);
     await newBuget.save().catch((err)=>{
