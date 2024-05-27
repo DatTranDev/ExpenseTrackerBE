@@ -273,7 +273,7 @@ const getTransactionByUser = async (req, res) => {
     })
     const transaction = await Transaction.find({
         userId: userId
-    }).exec()
+    }).sort({createdAt: -1}).exec()
     
     const transactionsWithDetails = await Promise.all(transaction.map(async (item) => {
         let transactionObj = item.toObject();

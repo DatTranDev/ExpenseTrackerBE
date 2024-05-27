@@ -59,7 +59,7 @@ const addNewWallet = async (req, res) => {
                         receiverId: receiverId,
                         walletId: data._id,
                         createAt: Date.now(),
-                        name: data.name
+                        name: `${existUser.userName} mời bạn vào quỹ ${data.name}`
                     });
                     const newRequest = new Request(request);
                     await newRequest.save().catch(err=>{
@@ -229,12 +229,13 @@ const addMember = async(req, res)   => {
     if(!exist) return res.status(404).json({
         message: "Email is not found as a user"
     })
+    const message = `${existUser.userName} mời bạn vào quỹ ${existWallet.name}`;
     const request = new Request({
         senderId: userId,
         receiverId: exist._id,
         walletId: walletId,
         createAt: Date.now(),
-        name: existWallet.name
+        name: message
     });
     const newRequest = new Request(request);
     await newRequest.save().catch(err=>{
