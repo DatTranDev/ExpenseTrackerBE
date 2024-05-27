@@ -49,6 +49,7 @@ const getByUser = async (req, res) => {
         requestObj.sender = await User.findById(item.senderId).select('-password');
         requestObj.receiver = await User.findById(item.receiverId).select('-password');
         requestObj.wallet = await Wallet.findById(item.walletId);
+        requestObj.id = item._id;
         return requestObj;
     }));
 
