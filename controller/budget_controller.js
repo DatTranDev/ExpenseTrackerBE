@@ -1,4 +1,5 @@
 const Budget = require('../model/Budget.js');
+const Icon = require('../model/Icon.js');
 const User = require('../model/User.js');
 const Category = require('../model/Category.js');
 const helper = require('../pkg/helper/helper.js');
@@ -30,15 +31,26 @@ const addNewBudget = async (req, res) => {
     if(budget) return res.status(400).json({
         message: "Ngân sách đã tồn tại"
     })
-    const newBuget = new Budget(req.body);
-    await newBuget.save().catch((err)=>{
+    const newBudget = new Budget(req.body);
+    await newBudget.save().catch((err)=>{
         return res.status(500).json({
             message: err.message
         })
     })
+    const category = await Category.findById(newBudget.categoryId).lean();
+    const icon = await Icon.findById(category.iconId).lean();
+
+    const budgetWithCategory = {
+        ...newBudget._doc,
+        category: {
+            ...category,
+            icon: icon
+        }
+    };
+
     return res.json({
-        data: newBuget
-    })
+        data: budgetWithCategory
+    });
 }
 const updateBudget = async (req, res) => {
     const budgetId = req.params.id;
