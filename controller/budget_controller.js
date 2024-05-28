@@ -61,15 +61,13 @@ const updateBudget = async (req, res) => {
             message: "Category is not found"
         })
     }
-    if(categoryId!=null||req.body.period!=null){
-        const budget = await Budget.
-        findOne({userId: existBudget.userId, 
-                categoryId: categoryId != null ? categoryId : existBudget.categoryId, 
-                period: req.body.period !=null ? req.body.period : existBudget.period});
-        if(budget&& budget._id!=budgetId) return res.status(400).json({
-            message: "Ngân sách đã tồn tại"
-        })
-    }
+    const budget = await Budget.
+    findOne({userId: existBudget.userId, 
+            categoryId: categoryId != null ? categoryId : existBudget.categoryId, 
+            period: req.body.period !=null ? req.body.period : existBudget.period});
+    if(budget && budget._id != budgetId) return res.status(400).json({
+        message: "Ngân sách đã tồn tại"
+    })
     await Budget.findByIdAndUpdate(budgetId, req.body).catch((err)=>{
         return res.status(400).json({
             message: err.message
