@@ -25,11 +25,6 @@ const addTransaction = async (req, res) => {
             message: "Invalid date format"
         });
     }
-    if(date>new Date()){
-        return res.status(400).json({
-            message: "Invalid date"
-        });
-    }
 
     const isValidId = await helper.isValidObjectID(userId);
     if(!isValidId) return res.status(400).json({
