@@ -11,6 +11,7 @@ const addNewWallet = async (req, res) => {
     if (req.body.isSharing==true){
         //Find and get user id from email
         const listUserEmail = req.body.inviteUserMail;
+        if(listUserEmail!=null && listUserEmail.length>0)
         for (let i = 0; i < listUserEmail.length; i++) {
             const email = listUserEmail[i];
             const isValidEmail = await helper.isValidEmail(email);
