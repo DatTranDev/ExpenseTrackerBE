@@ -26,7 +26,7 @@ const addNewBudget = async (req, res) => {
         message: "Category is not found"
     })
 
-    const budget = await Budget.findOne({userId: userId, categoryId: categoryId});
+    const budget = await Budget.findOne({userId: userId, categoryId: categoryId, period: req.body.period});
     if(budget) return res.status(400).json({
         message: "Ngân sách đã tồn tại"
     })
@@ -60,7 +60,10 @@ const updateBudget = async (req, res) => {
         if(!existCategory) return res.status(404).json({
             message: "Category is not found"
         })
-        const budget = await Budget.findOne({userId: existBudget.userId, categoryId: categoryId});
+        const budget = await Budget.
+        findOne({userId: existBudget.userId, 
+                categoryId: categoryId, 
+                period: req.body.period !=null ? req.body.period : existBudget.period});
         if(budget) return res.status(400).json({
             message: "Ngân sách đã tồn tại"
         })
