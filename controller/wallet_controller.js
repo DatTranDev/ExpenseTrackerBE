@@ -100,11 +100,11 @@ const updateWallet = async (req, res) => {
         message: "Invalid wallet id"
     })
     const existWallet = await Wallet.findById(walletId); 
-    if(!existWallet) return res.status(404).json({
+    if(!existWallet) return res.status(400).json({
         message: "Wallet is not found"
     })
     if(req.body.name){
-        const existingWallet = await Wallet.fin({name: new RegExp(`^${req.body.name.trim()}$`, 'i')});
+        const existingWallet = await Wallet.find({name: new RegExp(`^${req.body.name.trim()}$`, 'i')});
         if(existingWallet && existWallet._id!=existingWallet._id) return res.status(400).json({
             message: "Wallet is existed"
         });
