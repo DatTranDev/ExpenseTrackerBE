@@ -49,6 +49,7 @@ const addNewCategory = async (req, res) => {
 
     if (existingCategory) {
         const existingUserCategory = await UserCategory.findOne({ userId: userId, categoryId: existingCategory._id });
+        console.log(existingUserCategory);
         if (existingUserCategory) 
             return res.status(400).json({
                 message: "Danh mục đã tồn tại"
@@ -70,11 +71,10 @@ const addNewCategory = async (req, res) => {
             id: data._id,
             parentCategory: {
                 ...parentCategory,
-                id: parentCategory._id
+                id: parentCategory != null ? parentCategory._id : null
             },
             icon: {
-                ...icon,
-                id: icon._id
+                ...icon
             }
         };
         const userCategory = new UserCategory({
@@ -94,7 +94,7 @@ const addNewCategory = async (req, res) => {
         })
     }).catch((err)=>{
         return res.status(400).json({
-            message: "Something went wrong"
+            message: "Something went wrong " + err.message
         })
     })
 };
@@ -198,12 +198,12 @@ const updateCategory = async (req, res) => {
         message: "Category is not found"
     })
     if(existCategory.isPublic) return res.status(400).json({
-        message: "Can't update public category"
+        message: "Không thể sửa danh mục công khai"
     })
 
     const type = req.body.type;
     if(type != null && type != existCategory.type) return res.status(400).json({
-        message: "Can't update type of category"
+        message: "Không thể sửa loại danh mục"
     })
 
     const isValidUserId = await helper.isValidObjectID(userId);
@@ -253,11 +253,12 @@ const updateCategory = async (req, res) => {
     }
     await Category.findOneAndUpdate({ _id: categoryId }, req.body).then(async (data)=>{
         return res.json({
-            message: "Updated successfully"
+            message: "Cập nhật thành công",
+            data: data
         })
     }).catch((err)=>{
         return res.status(400).json({
-            message: "Something went wrong"
+            message: "Something went wrong",
         })
     })
 }
