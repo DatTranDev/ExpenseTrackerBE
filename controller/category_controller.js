@@ -68,8 +68,14 @@ const addNewCategory = async (req, res) => {
         const cateData = {
             ...data._doc,
             id: data._id,
-            parentCategory: parentCategory,
-            icon: icon
+            parentCategory: {
+                ...parentCategory,
+                id: parentCategory._id
+            },
+            icon: {
+                ...icon,
+                id: icon._id
+            }
         };
         const userCategory = new UserCategory({
             userId: userId,
@@ -112,8 +118,17 @@ const deleteCategory = async (req, res) => {
     const existUser = await User.findById(userId).select('-password')
     if(!existUser) return res.status(404).json({
         message: "User is not found"
-    })   
+    })
+    console.log(existCategory);
 
+    if(existCategory.parentCategoryId==null){
+        const childCategories = await Category.find({parentCategoryId: categoryId});
+        if(childCategories.length>0){
+            return res.status(400).json({
+                message: "Hãy xóa tất cả danh mục con trước khi xóa danh mục cha"
+            })
+        }
+    } 
 
     const userCategory = await UserCategory.findOne({ categoryId: categoryId, userId: userId });
 
