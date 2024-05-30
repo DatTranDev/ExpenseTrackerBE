@@ -130,9 +130,9 @@ const deleteCategory = async (req, res) => {
         await Transaction.findByIdAndDelete(transaction._id).then(async ()=>{
             const existWallet = await Wallet.findById(transaction.walletId);
             if(['Khoản thu', 'Đi vay', 'Thu nợ'].includes(transaction.type))
-                existWallet.amount -= transaction.amount;
+                existWallet.amount -= transaction.spend;
             else
-                existWallet.amount += transaction.amount;
+                existWallet.amount += transaction.spend;
             await existWallet.save().catch((err)=>{
                 return res.status(400).json({
                     message: "Something went wrong when updating Wallet: " + err.message
