@@ -171,4 +171,80 @@ const deleteCategory = async (req, res) => {
     });
 }
 
-module.exports = { addNewCategory, deleteCategory };
+const updateCategory = async (req, res) => {
+    const categoryId = req.params.id;
+    const userId = req.body.userId;
+    const isValidId = await helper.isValidObjectID(categoryId);
+    if(!isValidId) return res.status(400).json({
+        message: "Invalid category id"
+    })
+    const existCategory = await Category.findById(categoryId);
+    if(!existCategory) return res.status(404).json({
+        message: "Category is not found"
+    })
+    if(existCategory.isPublic) return res.status(400).json({
+        message: "Can't update public category"
+    })
+
+    const type = req.body.type;
+    if(type != null && type != existCategory.type) return res.status(400).json({
+        message: "Can't update type of category"
+    })
+
+    const isValidUserId = await helper.isValidObjectID(userId);
+    if(!isValidUserId) return res.status(400).json({
+        message: "Invalid user id"
+    })
+    const existUser = await User.findById(userId).select('-password')
+    if(!existUser) return res.status(404).json({
+        message: "User is not found"
+    })   
+
+    //Check Icon exist
+    const iconId = req.body.iconId;
+    if(iconId){
+        const isValidIconId = await helper.isValidObjectID(iconId);
+        if(!isValidIconId) return res.status(400).json({
+            message: "Invalid icon id"
+        });
+        const existIcon = await Icon.findById(iconId);
+        if(!existIcon) return res.status(404).json({
+            message: "Icon is not found"
+        })
+    }
+
+    //Check Parent Category exist
+    const parentCategoryId = req.body.parentCategoryId;
+    if(parentCategoryId){
+        const isValidParentCategoryId = await helper.isValidObjectID(parentCategoryId);
+        if(!isValidParentCategoryId) return res.status(400).json({
+            message: "Invalid parent category id"
+        });
+        const existParentCategory = await Category.findById(parentCategoryId);
+        if(!existParentCategory) return res.status(404).json({
+            message: "Parent category is not found"
+        })
+    }
+
+    const name = req.body.name.trim();
+    const existingCategory = await Category.findOne({name: new RegExp(`^${name}$`, 'i')});
+
+    if (existingCategory && existingCategory._id.toString() !== categoryId) {
+        const existingUserCategory = await UserCategory.findOne({ userId: userId, categoryId: existingCategory._id });
+        if (existingUserCategory) 
+            return res.status(400).json({
+                message: "Danh mục đã tồn tại"
+            });
+    }
+    await Category.findOneAndUpdate({ _id: categoryId }, req.body).then(async (data)=>{
+        return res.json({
+            message: "Updated successfully"
+        })
+    }).catch((err)=>{
+        return res.status(400).json({
+            message: "Something went wrong"
+        })
+    })
+}
+
+module.exports = { addNewCategory, deleteCategory, updateCategory };
