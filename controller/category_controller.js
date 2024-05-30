@@ -67,6 +67,7 @@ const addNewCategory = async (req, res) => {
         const icon = await Icon.findById(data.iconId).lean();
         const cateData = {
             ...data._doc,
+            id: data._id,
             parentCategory: parentCategory,
             icon: icon
         };
