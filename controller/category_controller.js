@@ -62,8 +62,14 @@ const addNewCategory = async (req, res) => {
         isPublic: req.body.isPublic
     });
     const newCategory = new Category(category);
-    await newCategory.save().then((data)=>{
-        const cateData = data;
+    await newCategory.save().then(async (data)=>{
+        const parentCategory = await Category.findById(data.parentCategoryId).lean();
+        const icon = await Icon.findById(data.iconId).lean();
+        const cateData = {
+            ...data._doc,
+            parentCategory: parentCategory,
+            icon: icon
+        };
         const userCategory = new UserCategory({
             userId: userId,
             categoryId: data._id
