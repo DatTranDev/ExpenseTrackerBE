@@ -257,6 +257,7 @@ const getSharingWalletByUser = async (req, res) => {
         const members = await UserWallet.find({ walletId: wallet._id }).populate({ path: 'userId', select: '-password' }).exec();
         return {
             ...wallet._doc,
+            id: wallet._id,
             members: members.map(member => member.userId)
         };
     }));
