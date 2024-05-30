@@ -124,7 +124,7 @@ const deleteCategory = async (req, res) => {
             message: "Something went wrong when deleting UserCategory: " + err.message
         });
     }
-    const transactions = await Transaction.find({ categoryid: categoryId, userId: userId });
+    const transactions = await Transaction.find({ categoryId: categoryId, userId: userId });
     
     for(let transaction of transactions){
         await Transaction.findByIdAndDelete(transaction._id).then(async ()=>{
