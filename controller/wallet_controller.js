@@ -2,6 +2,7 @@ const Wallet = require('../model/Wallet.js');
 const User = require('../model/User.js');
 const UserWallet = require('../model/UserWallet.js');
 const Category = require('../model/Category.js');
+const Icon = require('../model/Icon.js');
 const Transaction = require('../model/Transaction.js');
 const Request = require('../model/Request.js');
 const helper = require('../pkg/helper/helper.js');
@@ -334,7 +335,16 @@ const getTransactions = async (req, res) => {
     const transactionsWithDetails = await Promise.all(transactions.map(async (item) => {
         let transactionObj = item.toObject();
         transactionObj.user = await User.findById(item.userId).select('-password');
-        transactionObj.category = await Category.findById(item.categoryId);
+        const category = await Category.findById(item.categoryId);
+        transactionObj.category = {
+            ...category.toObject(),
+            id: category._id,
+            icon: await Icon.findById(category.iconId)
+        
+        };
+        transactionObj.wallet = await Wallet.findById(item.walletId);
+
+
         return transactionObj;
     }));
 
