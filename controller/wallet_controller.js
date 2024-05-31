@@ -307,7 +307,7 @@ const removeMember = async(req, res)   => {
         receiverId: removeUserId,
         walletId: null,
         createAt: Date.now(),
-        name: `${existUser.userName} xóa bản khỏi quỹ ${existWallet.name}`
+        name: `${existUser.userName} xóa bạn khỏi quỹ ${existWallet.name}`
     });
     const newRequest = new Request(request);
     await newRequest.save().catch(err=>{
