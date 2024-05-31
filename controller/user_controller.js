@@ -32,7 +32,36 @@ const  register = async (req, res) => {
             message: "Something went wrong"
         })
     })
+    // Create a default wallet for the new user
+    const defaultWallet = new Wallet({
+        name: 'Tiền mặt',
+        amount: 0,
+        currency: 'VND',
+        isSharing: false,  
+    });
+    await defaultWallet.save();
 
+    // Create a sharing wallet for the new user
+    const sharingWallet = new Wallet({
+        name: 'Quỹ chung',
+        amount: 0,
+        currency: 'VND',
+        isSharing: true
+    });
+    await sharingWallet.save();
+
+    // Associate the new user with the wallets
+    const userDefaultWallet = new UserWallet({
+        userId: userId,
+        walletId: defaultWallet._id
+    });
+    await userDefaultWallet.save();
+
+    const userSharingWallet = new UserWallet({
+        userId: userId,
+        walletId: sharingWallet._id
+    });
+    await userSharingWallet.save();
 
     const categories = await Category.find({isPublic: true});
      // For each shared category, create a new UserCategory
@@ -49,9 +78,10 @@ const  register = async (req, res) => {
             })
         })
     }
-
+    const resUser = await User.findById(userId).select('-password');
     return res.json ({
-        data: newUser
+        data: resUser,
+        message: "Register successfully"
     })
 
 }
