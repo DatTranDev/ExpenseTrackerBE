@@ -42,6 +42,7 @@ const addNewBudget = async (req, res) => {
 
     const budgetWithCategory = {
         ...newBudget._doc,
+        id: newBudget._id,
         category: {
             ...category,
             icon: icon
