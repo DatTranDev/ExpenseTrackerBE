@@ -38,6 +38,9 @@ mongoose.connect(url).then(
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(authJWT());
+app.get("/", (req,res)=>{
+    res.send("Hello World");
+})
 app.get("/ping", (req,res)=>{
     return res.status(200).json({
         message: "pong"
