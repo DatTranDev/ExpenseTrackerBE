@@ -3,11 +3,13 @@ const Category = require('../model/Category.js');
 const UserCategory = require('../model/UserCategory.js');
 const Wallet = require('../model/Wallet.js');
 const Icon = require('../model/Icon.js');
+const auth = require('../pkg/auth/authentication.js');
 const UserWallet = require('../model/UserWallet.js');
 const Transaction = require('../model/Transaction.js');
 const Budget = require('../model/Budget.js');
 const helper = require('../pkg/helper/helper.js');
 const bcrypt = require("../pkg/auth/authorization.js");
+const tokenController = require('./token_controller.js');
 const  register = async (req, res) => {
     console.log(req.body);
     const isValidEmail = await helper.isValidEmail(req.body.email);
@@ -79,7 +81,12 @@ const  register = async (req, res) => {
         })
     }
     const resUser = await User.findById(userId).select('-password');
+    const accessToken = await auth.generateToken(newUser, "1h",'access')
+    const refreshToken = await auth.generateToken(newUser, "30d", 'refresh')
+    tokenController.addNewToken(refreshToken, newUser._id)
     return res.json ({
+        accessToken: accessToken,
+        refreshToken: refreshToken,
         data: resUser,
         message: "Register successfully"
     })
@@ -99,7 +106,9 @@ const login = async (req, res) => {
     const user = await User.findOne({
         email: req.body.email
     }).select('-password')
-
+    const accessToken = await auth.generateToken(existUser,"1h", 'access')
+    const refreshToken = await auth.generateToken(existUser, "30d", 'refresh')
+    tokenController.addNewToken(refreshToken, user._id)
     return res.json({
         data: user
     })
@@ -210,6 +219,22 @@ const getUserById = async (req, res) => {
     })
 }
 const logOut = async (req, res) => {
+    const header = req.headers.authorization
+    const split = header.split(" ")
+    const refreshToken = split[1]
+    try{
+        const tokenFind = await tokenController.revokedToken(refreshToken)
+        if(!tokenFind) {
+            return res.status(400).json({
+                message: "Invalid refresh token"
+            })
+        }
+    }
+    catch{
+        return res.status(400).json({
+            message: "Something went wrong"
+        })
+    }
     return res.json({
         message: "Log out successfully"
     })
