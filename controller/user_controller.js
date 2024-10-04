@@ -110,7 +110,9 @@ const login = async (req, res) => {
     const refreshToken = await auth.generateToken(existUser, "30d", 'refresh')
     tokenController.addNewToken(refreshToken, user._id)
     return res.json({
-        data: user
+        data: user,
+        accessToken: accessToken,
+        refreshToken: refreshToken
     })
 }
 const changePassword = async (req, res) => {
